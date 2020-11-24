@@ -1,5 +1,5 @@
-import random
 import math
+from genetic_operation import *
 
 
 def calculate_fitness(x1, x2):
@@ -12,53 +12,6 @@ def select_from_random(cumulative_probabilities, random_pro):
         if random_pro < cumulative_probabilities[index]:
             return index
 
-
-def crossover(pop, p_c):
-    selected_index = []
-    for i in range(len(pop)):
-        if random.random() < p_c:
-            selected_index.append(i)
-        else:
-            extra_chromo_index = i
-    if len(selected_index) % 2 != 0:
-        if random.random() < 0.5:
-            # remove chromo
-            selected_index.remove(selected_index[-1])
-        else:
-            # add chromo
-            if extra_chromo_index is not None:
-                selected_index.append(extra_chromo_index)
-            else:
-                print("every chromosome is selected")
-    for i in range(len(selected_index)):
-        if i % 2 == 0 and (i+1) < len(selected_index):
-            #print("selected_index", selected_index[i+1])
-            chromo_1 = pop[selected_index[i]]
-            chromo_2 = pop[selected_index[i+1]]
-            cpoint = random.randint(1, len(chromo_1)-1)
-            temp1 = []
-            temp2 = []
-            temp1.extend(chromo_1[0:cpoint])
-            temp1.extend(chromo_2[cpoint:len(chromo_1)])
-            temp2.extend(chromo_2[0:cpoint])
-            temp2.extend(chromo_1[cpoint:len(chromo_1)])
-            pop[selected_index[i]] = temp1
-            pop[selected_index[i + 1]] = temp2
-    return pop
-
-
-def mutation(pop, p_m):
-    pop_size = len(pop)
-    chromo_length = len(pop[0])
-
-    for i in range(pop_size):
-        for j in range(chromo_length):
-            if random.random() < p_m:
-                if pop[i][j] == 1:
-                    pop[i][j] = 0
-                else:
-                    pop[i][j] = 1
-    return pop
 
 def chromo_decode(chromosome):
     x1 = 0
@@ -101,14 +54,14 @@ def selection_process(population):
     for index in range(len(fitness_array)):
         probability = fitness_array[index] / fitness_sum
         probability_select.append(probability)
-    #print("probability_select:", probability_select)
+    # print("probability_select:", probability_select)
     # describe on page 28
     cumulative_probabilities = []
     pdf = 0
     for index in range(len(fitness_array)):
         pdf += probability_select[index]
         cumulative_probabilities.append(pdf)
-    #print("cumulative_probabilities:", cumulative_probabilities)
+    # print("cumulative_probabilities:", cumulative_probabilities)
 
     # Now we are ready to spin the roulette wheel 20 times
     random_sequence = []
@@ -123,7 +76,7 @@ def selection_process(population):
     return new_pop
 
 
-def get_best_chromosome(population):
+def get_best_chromosome_from_pop(population):
     fitness_array = []
     for index in range(len(population)):
         x1, x2 = chromo_decode(population[index])
@@ -158,7 +111,7 @@ def main():
         pop_after_cross_mute = mutation(new_pop_cross, p_m)
         population = pop_after_cross_mute
         print("Generation", generation, "generated!!")
-        best_x, best_f = get_best_chromosome(population)
+        best_x, best_f = get_best_chromosome_from_pop(population)
         if best_f > best_fitness:
             best_x_pair = best_x
             best_fitness = best_f
