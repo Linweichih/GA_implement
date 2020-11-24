@@ -14,18 +14,34 @@ def select_from_random(cumulative_probabilities, random_pro):
 
 
 def crossover(pop, p_c):
-    pop_size = len(pop)
-    for i in range(pop_size - 1):
+    selected_index = []
+    for i in range(len(pop)):
         if random.random() < p_c:
-            cpoint = random.randint(0, len(pop[0]))
+            selected_index.append(i)
+        else:
+            extra_chromo = i
+    if len(selected_index) % 2 != 0:
+        if random.random() < 0.5:
+            # remove chromo
+            selected_index.remove(selected_index[-1])
+        else:
+            # add chromo
+            selected_index.append(extra_chromo)
+    for i in range(len(selected_index)):
+        if i % 2 == 0 and (i+1) < len(selected_index):
+            print("selected_index", selected_index[i+1])
+            chromo_1 = pop[selected_index[i]]
+            chromo_2 = pop[selected_index[i+1]]
+            cpoint = random.randint(1, len(chromo_1)-1)
             temp1 = []
             temp2 = []
-            temp1.extend(pop[i][0:cpoint])
-            temp1.extend(pop[i+1][cpoint:len(pop[i])])
-            temp2.extend(pop[i+1][0:cpoint])
-            temp2.extend(pop[i][cpoint:len(pop[i])])
-            pop[i] = temp1
-            pop[i+1] = temp2
+            temp1.extend(chromo_1[0:cpoint])
+            temp1.extend(chromo_2[cpoint:len(chromo_1)])
+            temp2.extend(chromo_2[0:cpoint])
+            temp2.extend(chromo_1[cpoint:len(chromo_1)])
+            pop[selected_index[i]] = temp1
+            pop[selected_index[i + 1]] = temp2
+    return pop
 
 
 def mutation(pop, p_m):
@@ -33,13 +49,13 @@ def mutation(pop, p_m):
     chromo_length = len(pop[0])
 
     for i in range(pop_size):
-        if random.random() < p_m:
-            mpoint = random.randint(0, chromo_length - 1)
-            if pop[i][mpoint] == 1:
-                pop[i][mpoint] = 0
-            else:
-                pop[i][mpoint] = 1
-
+        for j in range(chromo_length):
+            if random.random() < p_m:
+                if pop[i][j] == 1:
+                    pop[i][j] = 0
+                else:
+                    pop[i][j] = 1
+    return pop
 
 def chromo_decode(chromosome):
     x1 = 0
@@ -67,50 +83,83 @@ def gene_population(pop_size, chromosome_length):
     return pop[1:]
 
 
-def main():
-    print("Start GA implement!!")
-    pop_size = 20
-    # x1 length is 24 ,x2 length is 21
-    chromosome_length = 45
-    p_c = 0.25
-    p_m = 0.01
-    # method on Page 23
-    population = gene_population(pop_size, chromosome_length)
-    print(population)
+def selection_process(population):
+
     fitness_array = []
-    fitness_sum = 0
     for index in range(len(population)):
         x1, x2 = chromo_decode(population[index])
         fitness = calculate_fitness(x1, x2)
         # print(fitness)
-
         # describe on page 26
         fitness_array.append(fitness)
     fitness_sum = sum(fitness_array)
     # describe on page 27
-    probibility_select = []
+    probability_select = []
     for index in range(len(fitness_array)):
-        probibility = fitness_array[index] / fitness_sum
-        probibility_select.append(probibility)
-    print("probibility_select:", probibility_select)
+        probability = fitness_array[index] / fitness_sum
+        probability_select.append(probability)
+    print("probability_select:", probability_select)
     # describe on page 28
     cumulative_probabilities = []
     pdf = 0
     for index in range(len(fitness_array)):
-        pdf += probibility_select[index]
+        pdf += probability_select[index]
         cumulative_probabilities.append(pdf)
     print("cumulative_probabilities:", cumulative_probabilities)
+
     # Now we are ready to spin the roulette wheel 20 times
     random_sequence = []
     for i in range(20):
         random_sequence.append(random.random())
     # print(random_sequence)
-
     new_pop = []
     for i in range(len(random_sequence)):
         selected_index = select_from_random(cumulative_probabilities, random_sequence[i])
-        print("append chromo ", selected_index)
+        # print("append chromo ", selected_index)
         new_pop.append(population[selected_index])
+    return new_pop
+
+
+def get_best_chromosome(population):
+    fitness_array = []
+    for index in range(len(population)):
+        x1, x2 = chromo_decode(population[index])
+        fitness = calculate_fitness(x1, x2)
+        # print(fitness)
+        # describe on page 26
+        fitness_array.append(fitness)
+    best_f = max(fitness_array)
+    # print(population[fitness_array.index(max(fitness_array))])
+    x1, x2 = chromo_decode(population[fitness_array.index(max(fitness_array))])
+    best_x = [x1, x2]
+    return best_x, best_f
+
+
+def main():
+    print("Start GA implement!!")
+    pop_size = 20
+    # x1 length is 24 ,x2 length is 21
+    chromosome_length = 45
+    generation_num = 2500
+    p_c = 0.25
+    p_m = 0.01
+    best_fitness = 0
+    best_x_pair = []
+    # method on Page 23 init the population
+    population = gene_population(pop_size, chromosome_length)
+    print(population)
+    for generation in range(generation_num):
+        select_pop = selection_process(population)
+        # the genetic operators
+        new_pop_cross = crossover(select_pop, p_c)
+        pop_after_cross_mute = mutation(new_pop_cross, p_m)
+        population = pop_after_cross_mute
+        print("Generation", generation, ":")
+        best_x, best_f = get_best_chromosome(population)
+        if best_f > best_fitness:
+            best_x_pair = best_x
+            best_fitness = best_f
+    print(best_x_pair, best_fitness)
 
 
 if __name__ == '__main__':
